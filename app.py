@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle
-import os
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -11,18 +10,18 @@ st.set_page_config(
     layout="wide"
 )
 
-SAVE_PATH = r"C:\Users\KATHERINE\OneDrive\Desktop\chrun_app"
-
 # ---------------- LOAD MODEL ----------------
 @st.cache_resource
 def load_model_artifacts():
-    model = pickle.load(open(os.path.join(SAVE_PATH, "churn_model.pkl"), "rb"))
-    scaler = pickle.load(open(os.path.join(SAVE_PATH, "scaler.pkl"), "rb"))
-    feature_names = pickle.load(open(os.path.join(SAVE_PATH, "feature_names.pkl"), "rb"))
+    with open("churn_model.pkl", "rb") as f:
+        model = pickle.load(f)
+    with open("scaler.pkl", "rb") as f:
+        scaler = pickle.load(f)
+    with open("feature_names.pkl", "rb") as f:
+        feature_names = pickle.load(f)
     return model, scaler, feature_names
 
 model, scaler, feature_names = load_model_artifacts()
-
 
 # ---------------- HEADER ----------------
 st.title("📊 Customer Churn Prediction")
@@ -54,19 +53,31 @@ with c3:
 def preprocess_input():
     X = pd.DataFrame(np.zeros((1, len(feature_names))), columns=feature_names)
 
-    X['Age'] = age
-    X['Tenure'] = tenure
-    X['Usage Frequency'] = usage
-    X['Support Calls'] = support_calls
-    X['Payment Delay'] = payment_delay
-    X['Total Spend'] = total_spend
-    X['Last Interaction'] = last_interaction
+    if 'Age' in X.columns:
+        X['Age'] = age
+    if 'Tenure' in X.columns:
+        X['Tenure'] = tenure
+    if 'Usage Frequency' in X.columns:
+        X['Usage Frequency'] = usage
+    if 'Support Calls' in X.columns:
+        X['Support Calls'] = support_calls
+    if 'Payment Delay' in X.columns:
+        X['Payment Delay'] = payment_delay
+    if 'Total Spend' in X.columns:
+        X['Total Spend'] = total_spend
+    if 'Last Interaction' in X.columns:
+        X['Last Interaction'] = last_interaction
 
-    X['Gender_Male'] = 1 if gender == "Male" else 0
-    X['Subscription Type_Premium'] = 1 if subscription == "Premium" else 0
-    X['Subscription Type_Standard'] = 1 if subscription == "Standard" else 0
-    X['Contract Length_Monthly'] = 1 if contract == "Monthly" else 0
-    X['Contract Length_Quarterly'] = 1 if contract == "Quarterly" else 0
+    if 'Gender_Male' in X.columns:
+        X['Gender_Male'] = 1 if gender == "Male" else 0
+    if 'Subscription Type_Premium' in X.columns:
+        X['Subscription Type_Premium'] = 1 if subscription == "Premium" else 0
+    if 'Subscription Type_Standard' in X.columns:
+        X['Subscription Type_Standard'] = 1 if subscription == "Standard" else 0
+    if 'Contract Length_Monthly' in X.columns:
+        X['Contract Length_Monthly'] = 1 if contract == "Monthly" else 0
+    if 'Contract Length_Quarterly' in X.columns:
+        X['Contract Length_Quarterly'] = 1 if contract == "Quarterly" else 0
 
     return X
 
@@ -82,26 +93,25 @@ if st.button("Predict Churn Risk", use_container_width=True):
 
     # ---------------- RISK LEVEL ----------------
     if churn_prob < 30:
-        st.success(f"Low Risk Customer  •  Churn Probability: {churn_prob:.2f}%")
+        st.success(f"Low Risk Customer • Churn Probability: {churn_prob:.2f}%")
     elif churn_prob < 60:
-        st.warning(f"Medium Risk Customer  •  Churn Probability: {churn_prob:.2f}%")
+        st.warning(f"Medium Risk Customer • Churn Probability: {churn_prob:.2f}%")
     else:
-        st.error(f"High Risk Customer  •  Churn Probability: {churn_prob:.2f}%")
+        st.error(f"High Risk Customer • Churn Probability: {churn_prob:.2f}%")
 
-    # ---------------- COMPACT LAYOUT ----------------
-    colA, colB = st.columns([1, 1])
+    # ---------------- VISUALS ----------------
+    colA, colB = st.columns(2)
 
-    # --------- PROBABILITY BAR (SMALL) ---------
     with colA:
         st.markdown("**Churn Probability**")
-        chart_df = pd.DataFrame({
-            "Probability (%)": [100 - churn_prob, churn_prob]
-        }, index=["Not Churn", "Churn"])
+        chart_df = pd.DataFrame(
+            {"Probability (%)": [100 - churn_prob, churn_prob]},
+            index=["Not Churn", "Churn"]
+        )
         st.bar_chart(chart_df, height=200)
 
-    # --------- RISK PROGRESS ---------
     with colB:
-        st.markdown("**Risk Level Indicator**")
+        st.markdown("**Risk Indicator**")
         st.progress(int(churn_prob))
 
     # ---------------- FEATURE IMPORTANCE ----------------
@@ -112,12 +122,13 @@ if st.button("Predict Churn Risk", use_container_width=True):
         "Impact": model.coef_[0]
     }).sort_values(by="Impact", ascending=False)
 
-    col_pos, col_neg = st.columns(2)
+    c_pos, c_neg = st.columns(2)
 
-    with col_pos:
+    with c_pos:
         st.markdown("⬆️ **Increases Churn Risk**")
         st.dataframe(coef_df.head(5), use_container_width=True, height=220)
 
-    with col_neg:
+    with c_neg:
         st.markdown("⬇️ **Reduces Churn Risk**")
         st.dataframe(coef_df.tail(5), use_container_width=True, height=220)
+
