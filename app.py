@@ -23,6 +23,7 @@ def load_model_artifacts():
 
 model, scaler, feature_names = load_model_artifacts()
 
+
 # ---------------- HEADER ----------------
 st.title("📊 Customer Churn Prediction")
 st.caption("Predict customer churn risk using machine learning")
